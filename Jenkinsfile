@@ -28,6 +28,6 @@ pipeline {
                 // SCP files
                 sh 'scp -rp index.html cloud_user@f120574411474f3dbf996693ff893a102c.mylabserver.com:/var/www/html/'
             }
-        }
-    }
+        }
+    }
 }
