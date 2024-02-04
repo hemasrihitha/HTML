@@ -10,10 +10,11 @@ pipeline {
         }
         stage('Clone') {
             steps {
-                // Clone from your GitHub repository
-                git 'https://github.com/hemasrihitha/HTML.git'
+                // Clone from your GitHub repository, using the correct branch name
+                git branch: "${env.BRANCH_NAME}", url: 'https://github.com/hemasrihitha/HTML.git'
             }
         }
+
 
         stage('Build') {
             steps {
