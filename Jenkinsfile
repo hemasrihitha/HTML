@@ -2,6 +2,12 @@ pipeline {
     agent any
 
     stages {
+        stage('Clean Workspace') {
+            steps {
+                // Clean the workspace
+                deleteDir()
+            }
+        }
         stage('Clone') {
             steps {
                 // Clone from your GitHub repository
