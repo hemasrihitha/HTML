@@ -33,7 +33,7 @@ pipeline {
         stage('Deploy') {
             steps {
                 // SCP files
-                sh 'scp -rp index.html cloud_user@f120574411474f3dbf996693ff893a103c.mylabserver.com:/var/www/html/'
+                sh 'scp -rp index.html cloud_user@f120574411474f3dbf996693ff893a102c.mylabserver.com:/var/www/html/'
             }
         }
     }
