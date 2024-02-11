@@ -1,39 +1,73 @@
 pipeline {
     agent any
-
     stages {
-        stage('Clean Workspace') {
-            steps {
-                // Clean the workspace
-                deleteDir()
-            }
-        }
-        stage('Clone') {
-            steps {
-                // Clone from your GitHub repository, using the correct branch name
-                git branch: "${env.BRANCH_NAME}", url: 'https://github.com/hemasrihitha/HTML.git'
-            }
-        }
-
-
         stage('Build') {
             steps {
-                // Print build started
-                echo 'Build started'
+                echo 'Running build automation'
+                sh './gradlew build --no-daemon'
+                archiveArtifacts artifacts: 'dist/trainSchedule.zip'
             }
         }
-
-        stage('Test') {
+        stage('DeployToStaging') {
+            when {
+                branch 'master'
+            }
             steps {
-                // Print test started
-                echo 'Test started'
+                withCredentials([usernamePassword(credentialsId: 'webserver_login', usernameVariable: 'USERNAME', passwordVariable: 'USERPASS')]) {
+                    sshPublisher(
+                        failOnError: true,
+                        continueOnError: false,
+                        publishers: [
+                            sshPublisherDesc(
+                                configName: 'staging',
+                                sshCredentials: [
+                                    username: "$USERNAME",
+                                    encryptedPassphrase: "$USERPASS"
+                                ], 
+                                transfers: [
+                                    sshTransfer(
+                                        sourceFiles: 'dist/trainSchedule.zip',
+                                        removePrefix: 'dist/',
+                                        remoteDirectory: '/tmp',
+                                        execCommand: 'sudo /usr/bin/systemctl stop train-schedule && rm -rf /opt/train-schedule/* && unzip /tmp/trainSchedule.zip -d /opt/train-schedule && sudo /usr/bin/systemctl start train-schedule'
+                                    )
+                                ]
+                            )
+                        ]
+                    )
+                }
             }
         }
-
-        stage('Deploy') {
+        stage('DeployToProduction') {
+            when {
+                branch 'master'
+            }
             steps {
-                // SCP files
-                sh 'scp -rp index.html cloud_user@f120574411474f3dbf996693ff893a103c.mylabserver.com:/var/www/html/'
+                input 'Does the staging environment look OK?'
+                milestone(1)
+                withCredentials([usernamePassword(credentialsId: 'webserver_login', usernameVariable: 'USERNAME', passwordVariable: 'USERPASS')]) {
+                    sshPublisher(
+                        failOnError: true,
+                        continueOnError: false,
+                        publishers: [
+                            sshPublisherDesc(
+                                configName: 'production',
+                                sshCredentials: [
+                                    username: "$USERNAME",
+                                    encryptedPassphrase: "$USERPASS"
+                                ], 
+                                transfers: [
+                                    sshTransfer(
+                                        sourceFiles: 'dist/trainSchedule.zip',
+                                        removePrefix: 'dist/',
+                                        remoteDirectory: '/tmp',
+                                        execCommand: 'sudo /usr/bin/systemctl stop train-schedule && rm -rf /opt/train-schedule/* && unzip /tmp/trainSchedule.zip -d /opt/train-schedule && sudo /usr/bin/systemctl start train-schedule'
+                                    )
+                                ]
+                            )
+                        ]
+                    )
+                }
             }
         }
     }
